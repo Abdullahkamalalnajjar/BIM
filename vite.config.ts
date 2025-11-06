@@ -43,10 +43,10 @@ export default defineConfig({
             "node_modules/@thatopen/fragments/dist/Worker/worker.mjs",
           );
           const workerDest = resolve(__dirname, "dist/worker.mjs");
-          
+
           console.log("🔍 Checking worker source:", workerSrc);
           console.log("📍 Worker destination:", workerDest);
-          
+
           if (existsSync(workerSrc)) {
             copyFileSync(workerSrc, workerDest);
             const stats = statSync(workerDest);

@@ -67,29 +67,37 @@ world.dynamicAnchor = false;
 
 // Wait for DOM to be ready before initializing
 const initializeComponents = async () => {
-  components.init();
+  console.log("🚀 Starting initialization...");
   
-  // Wait for viewport to be ready with proper size
+  // First, wait for viewport to be ready BEFORE initializing components
   await ensureViewportReady();
   
-  // Ensure viewport has proper size after initialization
-  setTimeout(() => {
-    if (world.renderer) {
-      console.log("🔄 Resizing renderer...");
-      world.renderer.resize();
-      world.camera.updateAspect();
-      console.log("✅ Renderer resized successfully");
-    }
-  }, 100);
+  console.log("✅ Viewport is ready, now initializing components...");
+  components.init();
+  
+  // Give it a moment to settle
+  await new Promise(resolve => setTimeout(resolve, 150));
+  
+  // Final resize to ensure everything is correct
+  if (world.renderer) {
+    console.log("🔄 Resizing renderer...");
+    world.renderer.resize();
+    world.camera.updateAspect();
+    console.log("✅ Renderer resized successfully");
+  }
+  
+  console.log("✅ All initialization complete!");
 };
 
 // Initialize after DOM is fully loaded
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initializeComponents);
+  document.addEventListener("DOMContentLoaded", () => {
+    requestAnimationFrame(initializeComponents);
+  });
 } else {
   // Use requestAnimationFrame to ensure DOM is painted
   requestAnimationFrame(() => {
-    initializeComponents();
+    setTimeout(initializeComponents, 50);
   });
 }
 
@@ -171,6 +179,32 @@ try {
   console.log("🔄 Attempting to initialize fragments...");
   await fragments.init(workerPath);
   console.log("✅ Fragments worker initialized successfully!");
+  
+  // Add error handler for worker messages using any to bypass type checking
+  const core = fragments.core as any;
+  if (core && core.worker) {
+    const worker = core.worker;
+    
+    worker.onerror = (event: any) => {
+      console.error("🔴 Worker error caught:", {
+        message: event.message || "Unknown error",
+        filename: event.filename || "Unknown file",
+        lineno: event.lineno || 0,
+        colno: event.colno || 0,
+        error: event.error || event
+      });
+      // Prevent default error bubbling
+      event.preventDefault?.();
+      return true;
+    };
+    
+    worker.onmessageerror = (event: any) => {
+      console.error("🔴 Worker message error:", event);
+      event.preventDefault?.();
+    };
+    
+    console.log("✅ Worker error handlers attached");
+  }
 } catch (error) {
   console.error("❌ Failed to initialize fragments worker");
   console.error("Error type:", error instanceof Error ? error.constructor.name : typeof error);
@@ -179,12 +213,16 @@ try {
   console.error("Attempted path:", workerPath);
 }
 
-fragments.core.models.materials.list.onItemSet.add(({ value: material }) => {
-  const isLod = "isLodMaterial" in material && material.isLodMaterial;
-  if (isLod) {
-    world.renderer!.postproduction.basePass.isolatedMaterials.push(material);
-  }
-});
+try {
+  fragments.core.models.materials.list.onItemSet.add(({ value: material }) => {
+    const isLod = "isLodMaterial" in material && material.isLodMaterial;
+    if (isLod && world.renderer) {
+      world.renderer.postproduction.basePass.isolatedMaterials.push(material);
+    }
+  });
+} catch (error) {
+  console.error("❌ Error setting up materials handler:", error);
+}
 
 world.camera.projection.onChanged.add(() => {
   for (const [_, model] of fragments.list) {
