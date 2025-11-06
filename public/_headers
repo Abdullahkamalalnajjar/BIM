@@ -1,0 +1,10 @@
+/*
+  Cross-Origin-Embedder-Policy: require-corp
+  Cross-Origin-Opener-Policy: same-origin
+
+/*.wasm
+  Content-Type: application/wasm
+
+/*.mjs
+  Content-Type: application/javascript
+

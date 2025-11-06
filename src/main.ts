@@ -84,7 +84,10 @@ aoPass.updateGtaoMaterial(aoParameters);
 aoPass.updatePdMaterial(pdParameters);
 
 const fragments = components.get(OBC.FragmentsManager);
-fragments.init("/node_modules/@thatopen/fragments/dist/Worker/worker.mjs");
+const workerPath = import.meta.env.DEV
+  ? "/node_modules/@thatopen/fragments/dist/Worker/worker.mjs"
+  : "./worker.mjs";
+fragments.init(workerPath);
 
 fragments.core.models.materials.list.onItemSet.add(({ value: material }) => {
   const isLod = "isLodMaterial" in material && material.isLodMaterial;
@@ -106,7 +109,7 @@ world.camera.controls.addEventListener("rest", () => {
 const ifcLoader = components.get(OBC.IfcLoader);
 await ifcLoader.setup({
   autoSetWasm: false,
-  wasm: { absolute: true, path: "https://unpkg.com/web-ifc@0.0.71/" },
+  wasm: { absolute: true, path: "https://unpkg.com/web-ifc@0.0.72/" },
 });
 
 const highlighter = components.get(OBF.Highlighter);
