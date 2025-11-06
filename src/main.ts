@@ -48,15 +48,27 @@ viewport.addEventListener("resize", resizeWorld);
 
 world.dynamicAnchor = false;
 
-components.init();
+// Wait for DOM to be ready before initializing
+const initializeComponents = () => {
+  components.init();
+  
+  // Ensure viewport has proper size after initialization
+  setTimeout(() => {
+    if (world.renderer) {
+      console.log("🔄 Resizing renderer...");
+      world.renderer.resize();
+      world.camera.updateAspect();
+      console.log("✅ Renderer resized");
+    }
+  }, 250);
+};
 
-// Ensure viewport has proper size after initialization
-setTimeout(() => {
-  if (world.renderer) {
-    world.renderer.resize();
-    world.camera.updateAspect();
-  }
-}, 100);
+// Initialize after DOM is fully loaded
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializeComponents);
+} else {
+  initializeComponents();
+}
 
 components.get(OBC.Raycasters).get(world);
 
