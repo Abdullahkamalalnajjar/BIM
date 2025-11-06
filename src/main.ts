@@ -50,6 +50,14 @@ world.dynamicAnchor = false;
 
 components.init();
 
+// Ensure viewport has proper size after initialization
+setTimeout(() => {
+  if (world.renderer) {
+    world.renderer.resize();
+    world.camera.updateAspect();
+  }
+}, 100);
+
 components.get(OBC.Raycasters).get(world);
 
 const { postproduction } = world.renderer;
@@ -87,7 +95,14 @@ const fragments = components.get(OBC.FragmentsManager);
 const workerPath = import.meta.env.DEV
   ? "/node_modules/@thatopen/fragments/dist/Worker/worker.mjs"
   : "./worker.mjs";
-fragments.init(workerPath);
+
+try {
+  await fragments.init(workerPath);
+  console.log("✅ Fragments worker initialized successfully");
+} catch (error) {
+  console.error("❌ Failed to initialize fragments worker:", error);
+  console.log("Worker path attempted:", workerPath);
+}
 
 fragments.core.models.materials.list.onItemSet.add(({ value: material }) => {
   const isLod = "isLodMaterial" in material && material.isLodMaterial;
