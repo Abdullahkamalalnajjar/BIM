@@ -92,16 +92,28 @@ aoPass.updateGtaoMaterial(aoParameters);
 aoPass.updatePdMaterial(pdParameters);
 
 const fragments = components.get(OBC.FragmentsManager);
-const workerPath = import.meta.env.DEV
-  ? "/node_modules/@thatopen/fragments/dist/Worker/worker.mjs"
-  : "./worker.mjs";
+
+// Determine worker path based on environment
+let workerPath: string;
+if (import.meta.env.DEV) {
+  workerPath = "/node_modules/@thatopen/fragments/dist/Worker/worker.mjs";
+} else {
+  // Production: worker.mjs is in the same directory as index.html
+  const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+  workerPath = `${window.location.origin}${basePath}worker.mjs`;
+}
+
+console.log("🔧 Initializing fragments worker");
+console.log("📍 Worker path:", workerPath);
+console.log("📍 Current location:", window.location.href);
 
 try {
   await fragments.init(workerPath);
-  console.log("✅ Fragments worker initialized successfully");
+  console.log("✅ Fragments worker initialized successfully!");
 } catch (error) {
-  console.error("❌ Failed to initialize fragments worker:", error);
-  console.log("Worker path attempted:", workerPath);
+  console.error("❌ Failed to initialize fragments worker");
+  console.error("Error:", error);
+  console.error("Attempted path:", workerPath);
 }
 
 fragments.core.models.materials.list.onItemSet.add(({ value: material }) => {

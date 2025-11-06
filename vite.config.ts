@@ -1,7 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { defineConfig } from "vite";
 import { resolve } from "path";
-import { copyFileSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync } from "fs";
 
 export default defineConfig({
   base: "./",
@@ -26,17 +26,22 @@ export default defineConfig({
   plugins: [
     {
       name: "copy-workers",
-      closeBundle() {
+      writeBundle() {
         try {
-          copyFileSync(
-            resolve(
-              __dirname,
-              "node_modules/@thatopen/fragments/dist/Worker/worker.mjs",
-            ),
-            resolve(__dirname, "dist/worker.mjs"),
+          const workerSrc = resolve(
+            __dirname,
+            "node_modules/@thatopen/fragments/dist/Worker/worker.mjs",
           );
+          const workerDest = resolve(__dirname, "dist/worker.mjs");
+          
+          if (existsSync(workerSrc)) {
+            copyFileSync(workerSrc, workerDest);
+            console.log("✅ Worker file copied successfully to dist/worker.mjs");
+          } else {
+            console.error("❌ Worker source file not found at:", workerSrc);
+          }
         } catch (error) {
-          console.warn("Could not copy worker file:", error);
+          console.error("❌ Failed to copy worker file:", error);
         }
       },
     },
