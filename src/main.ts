@@ -28,6 +28,23 @@ const viewport = BUI.Component.create<BUI.Viewport>(() => {
   return BUI.html`<bim-viewport></bim-viewport>`;
 });
 
+// Ensure viewport is mounted before creating renderer
+const ensureViewportReady = () => {
+  return new Promise<void>((resolve) => {
+    const checkSize = () => {
+      const canvas = viewport.querySelector("canvas");
+      if (canvas && canvas.offsetWidth > 0 && canvas.offsetHeight > 0) {
+        console.log("✅ Viewport ready:", canvas.offsetWidth, "x", canvas.offsetHeight);
+        resolve();
+      } else {
+        console.log("⏳ Waiting for viewport...");
+        requestAnimationFrame(checkSize);
+      }
+    };
+    setTimeout(checkSize, 50);
+  });
+};
+
 world.renderer = new OBF.PostproductionRenderer(components, viewport);
 world.camera = new OBC.OrthoPerspectiveCamera(components);
 world.camera.threePersp.near = 0.01;
@@ -49,8 +66,11 @@ viewport.addEventListener("resize", resizeWorld);
 world.dynamicAnchor = false;
 
 // Wait for DOM to be ready before initializing
-const initializeComponents = () => {
+const initializeComponents = async () => {
   components.init();
+  
+  // Wait for viewport to be ready with proper size
+  await ensureViewportReady();
   
   // Ensure viewport has proper size after initialization
   setTimeout(() => {
@@ -58,16 +78,19 @@ const initializeComponents = () => {
       console.log("🔄 Resizing renderer...");
       world.renderer.resize();
       world.camera.updateAspect();
-      console.log("✅ Renderer resized");
+      console.log("✅ Renderer resized successfully");
     }
-  }, 250);
+  }, 100);
 };
 
 // Initialize after DOM is fully loaded
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initializeComponents);
 } else {
-  initializeComponents();
+  // Use requestAnimationFrame to ensure DOM is painted
+  requestAnimationFrame(() => {
+    initializeComponents();
+  });
 }
 
 components.get(OBC.Raycasters).get(world);
@@ -110,22 +133,32 @@ let workerPath: string;
 if (import.meta.env.DEV) {
   workerPath = "/node_modules/@thatopen/fragments/dist/Worker/worker.mjs";
 } else {
-  // Production: worker.mjs is in the same directory as index.html
-  const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-  workerPath = `${window.location.origin}${basePath}worker.mjs`;
+  // Production: use absolute path from root
+  workerPath = "/worker.mjs";
 }
 
 console.log("🔧 Initializing fragments worker");
 console.log("📍 Worker path:", workerPath);
 console.log("📍 Current location:", window.location.href);
+console.log("📍 Full URL:", new URL(workerPath, window.location.origin).href);
 
 try {
   await fragments.init(workerPath);
   console.log("✅ Fragments worker initialized successfully!");
 } catch (error) {
   console.error("❌ Failed to initialize fragments worker");
-  console.error("Error:", error);
+  console.error("Error details:", error);
   console.error("Attempted path:", workerPath);
+  
+  // Try alternative with full URL
+  try {
+    const fullPath = new URL(workerPath, window.location.origin).href;
+    console.warn("🔄 Retrying with full URL:", fullPath);
+    await fragments.init(fullPath);
+    console.log("✅ Worker initialized with full URL!");
+  } catch (retryError) {
+    console.error("❌ Retry also failed:", retryError);
+  }
 }
 
 fragments.core.models.materials.list.onItemSet.add(({ value: material }) => {

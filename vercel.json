@@ -1,6 +1,23 @@
 {
   "headers": [
     {
+      "source": "/worker.mjs",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript; charset=utf-8"
+        },
+        {
+          "key": "Cross-Origin-Embedder-Policy",
+          "value": "require-corp"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         {
@@ -27,7 +44,7 @@
       "headers": [
         {
           "key": "Content-Type",
-          "value": "application/javascript"
+          "value": "application/javascript; charset=utf-8"
         }
       ]
     }
