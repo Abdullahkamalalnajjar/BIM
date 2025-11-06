@@ -140,25 +140,43 @@ if (import.meta.env.DEV) {
 console.log("🔧 Initializing fragments worker");
 console.log("📍 Worker path:", workerPath);
 console.log("📍 Current location:", window.location.href);
-console.log("📍 Full URL:", new URL(workerPath, window.location.origin).href);
+console.log("📍 Origin:", window.location.origin);
+
+// Test if worker file exists by fetching it
+const testWorkerPath = async () => {
+  try {
+    const response = await fetch(workerPath);
+    console.log("📡 Worker fetch status:", response.status);
+    console.log("📡 Worker content-type:", response.headers.get("content-type"));
+    if (response.ok) {
+      console.log("✅ Worker file is accessible");
+      return true;
+    } else {
+      console.error("❌ Worker file returned:", response.status, response.statusText);
+      return false;
+    }
+  } catch (fetchError) {
+    console.error("❌ Failed to fetch worker:", fetchError);
+    return false;
+  }
+};
+
+const workerExists = await testWorkerPath();
+
+if (!workerExists) {
+  console.error("⚠️ Worker file not accessible - fragments may not work");
+}
 
 try {
+  console.log("🔄 Attempting to initialize fragments...");
   await fragments.init(workerPath);
   console.log("✅ Fragments worker initialized successfully!");
 } catch (error) {
   console.error("❌ Failed to initialize fragments worker");
+  console.error("Error type:", error instanceof Error ? error.constructor.name : typeof error);
+  console.error("Error message:", error instanceof Error ? error.message : String(error));
   console.error("Error details:", error);
   console.error("Attempted path:", workerPath);
-  
-  // Try alternative with full URL
-  try {
-    const fullPath = new URL(workerPath, window.location.origin).href;
-    console.warn("🔄 Retrying with full URL:", fullPath);
-    await fragments.init(fullPath);
-    console.log("✅ Worker initialized with full URL!");
-  } catch (retryError) {
-    console.error("❌ Retry also failed:", retryError);
-  }
 }
 
 fragments.core.models.materials.list.onItemSet.add(({ value: material }) => {
