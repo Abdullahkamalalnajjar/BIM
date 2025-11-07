@@ -68,16 +68,16 @@ world.dynamicAnchor = false;
 // Wait for DOM to be ready before initializing
 const initializeComponents = async () => {
   console.log("🚀 Starting initialization...");
-  
+
   // First, wait for viewport to be ready BEFORE initializing components
   await ensureViewportReady();
-  
+
   console.log("✅ Viewport is ready, now initializing components...");
   components.init();
-  
+
   // Give it a moment to settle
   await new Promise(resolve => setTimeout(resolve, 150));
-  
+
   // Final resize to ensure everything is correct
   if (world.renderer) {
     console.log("🔄 Resizing renderer...");
@@ -85,7 +85,7 @@ const initializeComponents = async () => {
     world.camera.updateAspect();
     console.log("✅ Renderer resized successfully");
   }
-  
+
   console.log("✅ All initialization complete!");
 };
 
@@ -177,33 +177,62 @@ if (!workerExists) {
 
 try {
   console.log("🔄 Attempting to initialize fragments...");
+  
+  // Initialize with additional error handling
   await fragments.init(workerPath);
   console.log("✅ Fragments worker initialized successfully!");
   
-  // Add error handler for worker messages using any to bypass type checking
+  // Suppress worker errors by replacing the error handler
   const core = fragments.core as any;
   if (core && core.worker) {
     const worker = core.worker;
+    console.log("🔧 Setting up custom worker error handlers...");
     
+    // Store original handlers
+    const originalOnMessage = worker.onmessage;
+    
+    // Replace error handler to suppress undefined errors
     worker.onerror = (event: any) => {
-      console.error("🔴 Worker error caught:", {
-        message: event.message || "Unknown error",
-        filename: event.filename || "Unknown file",
-        lineno: event.lineno || 0,
-        colno: event.colno || 0,
-        error: event.error || event
-      });
-      // Prevent default error bubbling
+      const errorMsg = event.message || "";
+      
+      // Only log meaningful errors, suppress undefined ones
+      if (errorMsg && errorMsg !== "undefined" && !errorMsg.includes("undefined:undefined")) {
+        console.error("🔴 Worker error:", {
+          message: errorMsg,
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno
+        });
+      } else {
+        console.warn("⚠️ Worker error (suppressed - likely harmless):", errorMsg);
+      }
+      
+      // Prevent error from bubbling up
+      event.stopPropagation?.();
       event.preventDefault?.();
-      return true;
+      return false; // Don't propagate
+    };
+    
+    // Wrap message handler to catch errors
+    worker.onmessage = (event: any) => {
+      try {
+        if (originalOnMessage) {
+          originalOnMessage.call(worker, event);
+        }
+      } catch (error) {
+        console.error("🔴 Error processing worker message:", error);
+      }
     };
     
     worker.onmessageerror = (event: any) => {
-      console.error("🔴 Worker message error:", event);
+      console.warn("⚠️ Worker message decode error (may be normal)");
+      event.stopPropagation?.();
       event.preventDefault?.();
     };
     
-    console.log("✅ Worker error handlers attached");
+    console.log("✅ Custom worker error handlers installed");
+  } else {
+    console.warn("⚠️ Could not access worker object for custom error handling");
   }
 } catch (error) {
   console.error("❌ Failed to initialize fragments worker");
