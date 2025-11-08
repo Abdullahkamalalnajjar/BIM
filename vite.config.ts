@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import { resolve, dirname } from "path";
 import { copyFileSync, existsSync, statSync } from "fs";
 import { fileURLToPath } from "url";
+import react from "@vitejs/plugin-react";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -34,6 +35,7 @@ export default defineConfig({
     copyPublicDir: true,
   },
   plugins: [
+    react(),
     {
       name: "copy-workers",
       writeBundle() {

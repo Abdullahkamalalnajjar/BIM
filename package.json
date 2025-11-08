@@ -9,9 +9,12 @@
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
     "@types/three": "0.175.0",
     "@typescript-eslint/eslint-plugin": "7.2.0",
     "@typescript-eslint/parser": "7.2.0",
+    "@vitejs/plugin-react": "^5.1.0",
     "eslint": "8.57.0",
     "eslint-config-airbnb-base": "15.0.0",
     "eslint-config-prettier": "9.1.0",
@@ -27,6 +30,8 @@
     "@thatopen/fragments": "~3.2.0",
     "@thatopen/ui": "~3.2.0",
     "@thatopen/ui-obc": "~3.2.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "three": "0.175.0",
     "web-ifc": "0.0.72"
   }
